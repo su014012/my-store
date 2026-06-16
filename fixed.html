@@ -168,6 +168,37 @@
   .nav-profile-info .name { font-size:13px; font-weight:600; }
   .nav-profile-info .role { font-size:11px; color:#9BA3B8; }
 </style>
+
+<!-- Supabase 연동 -->
+<script>
+const SUPABASE_URL = 'https://kfjjpagrgqbsuvmciiya.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmampwYWdyZ3Fic3V2bWNpaXlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1ODUyNTEsImV4cCI6MjA5NzE2MTI1MX0.BV_7NWiVFS3pNfcfzbE_A8oQBqGCVI6QW3Jqb51BYuc';
+async function sbFetch(table,method='GET',body=null,query=''){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`,{
+    method,
+    headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':method==='POST'?'return=representation':''},
+    body:body?JSON.stringify(body):null
+  });
+  const text=await res.text();return text?JSON.parse(text):[];
+}
+const DB={
+  async getAll(t){return await sbFetch(t,'GET',null,'?order=id.asc');},
+  async replaceAll(t,rows){
+    await sbFetch(t,'DELETE',null,'?id=gt.0');
+    if(!rows.length)return[];
+    return await sbFetch(t,'POST',rows);
+  }
+};
+function showSync(msg,type='info'){
+  let el=document.getElementById('sync-toast');
+  if(!el){el=document.createElement('div');el.id='sync-toast';
+    el.style.cssText='position:fixed;bottom:16px;right:16px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;z-index:99999;font-family:Pretendard,sans-serif;transition:opacity .5s;';
+    document.body.appendChild(el);}
+  el.style.background=type==='ok'?'#2EC4A5':type==='err'?'#FF6B6B':'#4A7CFE';
+  el.style.color='#fff';el.style.opacity='1';el.textContent=msg;
+  setTimeout(()=>el.style.opacity='0',2500);
+}
+</script>
 </head>
 <body>
 
@@ -852,5 +883,44 @@ document.getElementById('data-manager-overlay').addEventListener('click', e => {
 });
 </script>
 
+
+<script>
+// ── Supabase 동기화 ──
+async function pushToDB() {
+  if (!navigator.onLine) { showSync('오프라인 상태입니다','err'); return; }
+  try {
+    showSync('☁️ 저장 중...');
+    const rows = JSON.parse(localStorage.getItem('household_fixed') || '[]');
+    const dbRows = rows.map(r=>({name:r.name,category:r.category||'',amount:r.amount||0,day:String(r.day||''),memo:r.memo||'',active:r.active!==false}));
+    await DB.replaceAll('household_fixed', dbRows);
+    showSync('✅ 클라우드 저장 완료!','ok');
+  } catch(e) { showSync('❌ 저장 실패: '+e.message,'err'); }
+}
+async function pullFromDB() {
+  if (!navigator.onLine) { showSync('오프라인 상태입니다','err'); return; }
+  try {
+    showSync('☁️ 불러오는 중...');
+    const rows = await DB.getAll('household_fixed');
+    if (!rows.length) { showSync('데이터 없음','err'); return; }
+    const data = rows.map(r=>({id:r.id,name:r.name,category:r.category,amount:r.amount||0,day:r.day,memo:r.memo||'',active:r.active!==false}));
+    localStorage.setItem('household_fixed', JSON.stringify(data));
+    showSync('✅ 동기화 완료!','ok');
+    setTimeout(()=>location.reload(), 800);
+  } catch(e) { showSync('❌ 실패: '+e.message,'err'); }
+}
+// 페이지 로드 시 자동 pull
+window.addEventListener('load', async ()=>{
+  if (navigator.onLine) {
+    try {
+      const rows = await DB.getAll('household_fixed');
+      if (rows.length > 0) {
+        const data = rows.map(r=>({id:r.id,name:r.name,category:r.category,amount:r.amount||0,day:r.day,memo:r.memo||'',active:r.active!==false}));
+        localStorage.setItem('household_fixed', JSON.stringify(data));
+        showSync('✅ 동기화됨','ok');
+      }
+    } catch(e) { console.warn('자동동기화 실패',e); }
+  }
+});
+</script>
 </body>
 </html>
