@@ -303,6 +303,15 @@ function showSync(msg,type='info'){
         </div>
         <div class="filter-divider"></div>
         <div class="filter-group">
+          <span class="filter-label">결제수단</span>
+          <select class="filter-select" id="filter-payment" onchange="renderTable()">
+            <option value="">전체</option>
+            <option value="현금">현금</option>
+            <option value="카드">카드</option>
+          </select>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-group">
           <span class="filter-label">내용</span>
           <input class="filter-input" id="filter-keyword" placeholder="검색어 입력..." style="width:140px" oninput="renderTable()">
         </div>
@@ -333,6 +342,7 @@ function showSync(msg,type='info'){
               <th style="width:100px">일자</th>
               <th style="width:60px" class="center">구분</th>
               <th style="width:110px">카테고리</th>
+              <th style="width:70px" class="center">결제수단</th>
               <th class="right" style="width:120px">금액</th>
               <th>내용</th>
               <th style="width:90px" class="center">관리</th>
@@ -341,7 +351,7 @@ function showSync(msg,type='info'){
           <tbody id="ledger-tbody"></tbody>
           <tfoot>
             <tr class="tfoot-row">
-              <td colspan="3" style="padding-left:16px;color:var(--text3)">합계</td>
+              <td colspan="4" style="padding-left:16px;color:var(--text3)">합계</td>
               <td class="right" id="foot-income" style="color:var(--green)"></td>
               <td></td>
               <td class="right" id="foot-expense" style="color:var(--red)"></td>
@@ -441,6 +451,13 @@ function showSync(msg,type='info'){
           <input type="text" class="form-input" id="f-amount" placeholder="0" oninput="formatAmt(this)">
         </div>
         <div class="form-group">
+          <label class="form-label">결제수단</label>
+          <select class="form-select" id="f-payment">
+            <option value="카드">💳 카드</option>
+            <option value="현금">💵 현금</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label">내용</label>
           <input type="text" class="form-input" id="f-desc" placeholder="내용을 입력하세요">
         </div>
@@ -518,10 +535,12 @@ function changeMonth(dir) {
 function getFiltered() {
   const t = document.getElementById('filter-type').value;
   const c = document.getElementById('filter-cat').value;
+  const p = document.getElementById('filter-payment').value;
   const k = document.getElementById('filter-keyword').value.trim().toLowerCase();
   return allData.filter(r => {
     if (t && r.type !== t) return false;
     if (c && r.category !== c) return false;
+    if (p && r.payment !== p) return false;
     if (k && !r.desc.toLowerCase().includes(k) && !r.category.toLowerCase().includes(k)) return false;
     return true;
   }).sort((a, b) => b.date.localeCompare(a.date));
@@ -546,6 +565,7 @@ function renderTable() {
         <td style="color:var(--text2)">${r.date}</td>
         <td class="center"><span class="${isIncome ? 'badge-income' : 'badge-expense'}">${isIncome ? '▲ 수입' : '▼ 지출'}</span></td>
         <td><span class="cat-tag">${r.category}</span></td>
+        <td class="center"><span style="font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600;background:${r.payment==='현금'?'#FFF9E6':'#EEF3FF'};color:${r.payment==='현금'?'#F59E0B':'#4A7CFE'}">${r.payment==='현금'?'💵 현금':'💳 카드'}</span></td>
         <td class="right ${isIncome ? 'amt-income' : 'amt-expense'}">
           ${isIncome ? '+' : '-'}₩${r.amount.toLocaleString()}
         </td>
@@ -615,6 +635,7 @@ function openPopup() {
   document.getElementById('f-date').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   document.getElementById('f-cat').value = '';
   document.getElementById('f-amount').value = '';
+  document.getElementById('f-payment').value = '카드';
   document.getElementById('f-desc').value = '';
   setType('수입');
   showPopup();
@@ -627,6 +648,7 @@ function openEdit(id) {
   document.getElementById('f-date').value = r.date;
   document.getElementById('f-cat').value = r.category;
   document.getElementById('f-amount').value = r.amount.toLocaleString();
+  document.getElementById('f-payment').value = r.payment || '카드';
   document.getElementById('f-desc').value = r.desc;
   setType(r.type);
   showPopup();
@@ -649,15 +671,16 @@ function saveRecord() {
   const date = document.getElementById('f-date').value;
   const cat = document.getElementById('f-cat').value;
   const amtRaw = document.getElementById('f-amount').value.replace(/,/g, '');
+  const payment = document.getElementById('f-payment').value;
   const desc = document.getElementById('f-desc').value;
   if (!date || !cat || !amtRaw) { alert('일자, 카테고리, 금액은 필수입니다.'); return; }
   const amount = parseInt(amtRaw);
   if (editId) {
     const idx = allData.findIndex(x => x.id === editId);
-    allData[idx] = { ...allData[idx], date, type: currentType, category: cat, amount, desc };
+    allData[idx] = { ...allData[idx], date, type: currentType, category: cat, amount, payment, desc };
   } else {
     const newId = Math.max(0, ...allData.map(x => x.id)) + 1;
-    allData.unshift({ id: newId, date, type: currentType, category: cat, amount, desc });
+    allData.unshift({ id: newId, date, type: currentType, category: cat, amount, payment, desc });
   }
   saveData(allData);
   closePopup();
@@ -684,6 +707,7 @@ function selectAll() { document.querySelectorAll('.row-check').forEach(c => c.ch
 function resetFilter() {
   document.getElementById('filter-type').value = '';
   document.getElementById('filter-cat').value = '';
+  document.getElementById('filter-payment').value = '';
   document.getElementById('filter-keyword').value = '';
   currentPage = 1; renderTable();
 }
@@ -919,7 +943,7 @@ async function pushToDB() {
   try {
     showSync('☁️ 저장 중...');
     const rows = JSON.parse(localStorage.getItem('household_ledger') || '[]');
-    const dbRows = rows.map(r=>({date:r.date,type:r.type,category:r.category||'',amount:r.amount||0,memo:r.desc||''}));
+    const dbRows = rows.map(r=>({date:r.date,type:r.type,category:r.category||'',amount:r.amount||0,memo:r.desc||'',payment:r.payment||'카드'}));
     await DB.replaceAll('household_ledger', dbRows);
     showSync('✅ 클라우드 저장 완료!','ok');
   } catch(e) { showSync('❌ 저장 실패: '+e.message,'err'); }
@@ -930,7 +954,7 @@ async function pullFromDB() {
     showSync('☁️ 불러오는 중...');
     const rows = await DB.getAll('household_ledger');
     if (!rows.length) { showSync('데이터 없음','err'); return; }
-    const data = rows.map((r,i)=>({id:r.id||i+1,date:r.date,type:r.type,category:r.category,amount:r.amount||0,desc:r.memo||''}));
+    const data = rows.map((r,i)=>({id:r.id||i+1,date:r.date,type:r.type,category:r.category,amount:r.amount||0,payment:r.payment||'카드',desc:r.memo||''}));
     localStorage.setItem('household_ledger', JSON.stringify(data));
     showSync('✅ 동기화 완료!','ok');
     setTimeout(()=>location.reload(), 800);
@@ -942,7 +966,7 @@ window.addEventListener('load', async ()=>{
     try {
       const rows = await DB.getAll('household_ledger');
       if (rows.length > 0) {
-        const data = rows.map((r,i)=>({id:r.id||i+1,date:r.date,type:r.type,category:r.category,amount:r.amount||0,desc:r.memo||''}));
+        const data = rows.map((r,i)=>({id:r.id||i+1,date:r.date,type:r.type,category:r.category,amount:r.amount||0,payment:r.payment||'카드',desc:r.memo||''}));
         localStorage.setItem('household_ledger', JSON.stringify(data));
         showSync('✅ 동기화됨','ok');
       }
