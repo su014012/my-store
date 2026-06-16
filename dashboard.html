@@ -314,51 +314,6 @@
   .nav-avatar { width:32px; height:32px; background:#EEF3FF; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#4A7CFE; flex-shrink:0; }
   .nav-profile-info .name { font-size:13px; font-weight:600; }
   .nav-profile-info .role { font-size:11px; color:#9BA3B8; }
-
-  /* ── 모바일 반응형 ── */
-  @media (max-width: 768px) {
-    .nav {
-      width: 100%;
-      height: 56px;
-      flex-direction: row;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: auto;
-      border-right: none;
-      border-bottom: 1px solid #E8ECF4;
-      z-index: 9999;
-      overflow: visible;
-    }
-    .nav-logo { padding: 0 16px; border-bottom: none; border-right: 1px solid #E8ECF4; display:flex; align-items:center; flex-direction:row; gap:8px; min-width:fit-content; }
-    .nav-logo .logo-icon { margin-bottom: 0; width:28px; height:28px; font-size:14px; }
-    .nav-logo .logo-title { font-size: 13px; }
-    .nav-logo .logo-sub { display: none; }
-    .nav-menu { padding: 0 8px; flex-direction: row; display:flex; overflow-x: auto; overflow-y: hidden; align-items: center; flex:1; gap:2px; }
-    .nav-section-label { display: none; }
-    .nav-item { padding: 6px 10px; font-size: 11px; white-space: nowrap; margin-bottom: 0; flex-shrink:0; }
-    .nav-item .icon { font-size: 14px; width: 16px; }
-    .nav-footer { display: none; }
-    .main { margin-left: 0; margin-top: 56px; }
-    .topbar { padding: 0 14px; height: 50px; }
-    .topbar-title { font-size: 14px; }
-    .content { padding: 14px; }
-    .summary-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; }
-    .bottom-grid, .bottom-grid-3, .grid-2, .grid-3, .grid-3-1 { grid-template-columns: 1fr !important; }
-    .quick-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .sum-row { grid-template-columns: repeat(2, 1fr) !important; }
-    .debt-amounts { grid-template-columns: repeat(3, 1fr) !important; }
-    .main-layout { flex-direction: column !important; }
-    .left-col, .right-col { width: 100% !important; }
-    .period-tabs { gap: 3px; }
-    .period-tab { padding: 4px 8px; font-size: 11px; }
-    .month-nav { gap: 4px; }
-    .month-label { font-size: 12px; min-width: 55px; }
-  }
-  @media (max-width: 480px) {
-    .summary-grid { grid-template-columns: 1fr !important; }
-    .sum-row { grid-template-columns: 1fr 1fr !important; }
-    .card-amount { font-size: 18px !important; }
-  }
-
 </style>
 </head>
 <body>
@@ -1193,9 +1148,37 @@ document.getElementById('data-manager-overlay').addEventListener('click', e => {
     <!-- 버튼 -->
     <div style="padding:16px 24px;display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="closeClosingPopup()" style="padding:9px 20px;border:1px solid #E8ECF4;border-radius:10px;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#5A6072;">닫기</button>
+      <button onclick="openHistoryPopup()" style="padding:9px 20px;border:1px solid #4A7CFE;border-radius:10px;background:#EEF3FF;color:#4A7CFE;cursor:pointer;font-size:13px;font-weight:600;">📋 마감 이력 보기</button>
       <button id="closing-confirm-btn" onclick="doMonthClose()" style="padding:9px 24px;border:none;border-radius:10px;background:linear-gradient(135deg,#4A7CFE,#8B5CF6);color:#fff;cursor:pointer;font-size:13px;font-weight:700;">✅ 마감 확정</button>
     </div>
 
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     월 마감 이력 팝업
+════════════════════════════════════════ -->
+<div id="history-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;width:560px;max-width:95vw;max-height:85vh;box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column;">
+
+    <!-- 헤더 -->
+    <div style="padding:20px 24px;background:linear-gradient(135deg,#2EC4A5,#10B981);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div>
+        <div style="font-size:16px;font-weight:700;">📋 월 마감 이력</div>
+        <div style="font-size:12px;opacity:.8;margin-top:2px;" id="history-total-text"></div>
+      </div>
+      <button onclick="closeHistoryPopup()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+
+    <!-- 이력 목록 -->
+    <div style="overflow-y:auto;flex:1;padding:20px 24px;">
+      <div id="history-list"></div>
+    </div>
+
+    <!-- 하단 버튼 -->
+    <div style="padding:16px 24px;border-top:1px solid #E8ECF4;display:flex;justify-content:flex-end;flex-shrink:0;">
+      <button onclick="closeHistoryPopup()" style="padding:9px 24px;border:none;border-radius:10px;background:#4A7CFE;color:#fff;cursor:pointer;font-size:13px;font-weight:700;">확인</button>
+    </div>
   </div>
 </div>
 
@@ -1359,8 +1342,72 @@ function doMonthClose() {
   }, 150);
 }
 
-// ── 유틸 ──
-function getLedger() {
+// ── 마감 이력 팝업 ──
+function openHistoryPopup() {
+  const history = getHistory();
+  const totalEl = document.getElementById('history-total-text');
+  const listEl  = document.getElementById('history-list');
+
+  totalEl.textContent = `총 ${history.length}회 마감 기록`;
+
+  if (!history.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:#9BA3B8;font-size:13px;">마감 이력이 없습니다</div>';
+  } else {
+    // 최신순 정렬
+    const sorted = [...history].reverse();
+    // 월별로 그룹핑
+    const grouped = {};
+    sorted.forEach(h => {
+      if (!grouped[h.yearMonth]) grouped[h.yearMonth] = [];
+      grouped[h.yearMonth].push(h);
+    });
+
+    listEl.innerHTML = Object.entries(grouped).sort((a,b) => b[0].localeCompare(a[0])).map(([ym, records]) => {
+      const [y, m] = ym.split('-');
+      return `
+        <div style="margin-bottom:20px;">
+          <div style="font-size:13px;font-weight:700;color:#1A1D2E;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+            <span style="background:#EEF3FF;color:#4A7CFE;padding:3px 10px;border-radius:20px;">${y}년 ${Number(m)}월</span>
+            <span style="font-size:11px;color:#9BA3B8;">${records.length}회 마감</span>
+          </div>
+          ${records.map(h => `
+            <div style="background:#F9FAFB;border:1px solid #E8ECF4;border-radius:10px;padding:14px 16px;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <div style="font-size:12px;color:#9BA3B8;">${formatDateTime(h.closedAt)}</div>
+                <div style="background:#E8F9F5;color:#2EC4A5;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;">${h.seq}회차</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                <div style="text-align:center;">
+                  <div style="font-size:10px;color:#9BA3B8;margin-bottom:4px;">수입</div>
+                  <div style="font-size:14px;font-weight:700;color:#2EC4A5;">₩${(h.summary.income||0).toLocaleString()}</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-size:10px;color:#9BA3B8;margin-bottom:4px;">지출</div>
+                  <div style="font-size:14px;font-weight:700;color:#FF6B6B;">₩${(h.summary.expense||0).toLocaleString()}</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-size:10px;color:#9BA3B8;margin-bottom:4px;">잔액</div>
+                  <div style="font-size:14px;font-weight:700;color:${(h.summary.balance||0)>=0?'#4A7CFE':'#FF6B6B'};">₩${Math.abs(h.summary.balance||0).toLocaleString()}</div>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('history-overlay').style.display = 'flex';
+}
+
+function closeHistoryPopup() {
+  document.getElementById('history-overlay').style.display = 'none';
+}
+
+// 팝업 외부 클릭 닫기
+document.getElementById('history-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('history-overlay')) closeHistoryPopup();
+});
+
+
   try { return JSON.parse(localStorage.getItem(LEDGER_KEY) || '[]'); } catch(e) { return []; }
 }
 function getHistory() {

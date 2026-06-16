@@ -191,51 +191,6 @@
   .nav-avatar { width:32px; height:32px; background:#EEF3FF; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#4A7CFE; flex-shrink:0; }
   .nav-profile-info .name { font-size:13px; font-weight:600; }
   .nav-profile-info .role { font-size:11px; color:#9BA3B8; }
-
-  /* ── 모바일 반응형 ── */
-  @media (max-width: 768px) {
-    .nav {
-      width: 100%;
-      height: 56px;
-      flex-direction: row;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: auto;
-      border-right: none;
-      border-bottom: 1px solid #E8ECF4;
-      z-index: 9999;
-      overflow: visible;
-    }
-    .nav-logo { padding: 0 16px; border-bottom: none; border-right: 1px solid #E8ECF4; display:flex; align-items:center; flex-direction:row; gap:8px; min-width:fit-content; }
-    .nav-logo .logo-icon { margin-bottom: 0; width:28px; height:28px; font-size:14px; }
-    .nav-logo .logo-title { font-size: 13px; }
-    .nav-logo .logo-sub { display: none; }
-    .nav-menu { padding: 0 8px; flex-direction: row; display:flex; overflow-x: auto; overflow-y: hidden; align-items: center; flex:1; gap:2px; }
-    .nav-section-label { display: none; }
-    .nav-item { padding: 6px 10px; font-size: 11px; white-space: nowrap; margin-bottom: 0; flex-shrink:0; }
-    .nav-item .icon { font-size: 14px; width: 16px; }
-    .nav-footer { display: none; }
-    .main { margin-left: 0; margin-top: 56px; }
-    .topbar { padding: 0 14px; height: 50px; }
-    .topbar-title { font-size: 14px; }
-    .content { padding: 14px; }
-    .summary-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; }
-    .bottom-grid, .bottom-grid-3, .grid-2, .grid-3, .grid-3-1 { grid-template-columns: 1fr !important; }
-    .quick-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .sum-row { grid-template-columns: repeat(2, 1fr) !important; }
-    .debt-amounts { grid-template-columns: repeat(3, 1fr) !important; }
-    .main-layout { flex-direction: column !important; }
-    .left-col, .right-col { width: 100% !important; }
-    .period-tabs { gap: 3px; }
-    .period-tab { padding: 4px 8px; font-size: 11px; }
-    .month-nav { gap: 4px; }
-    .month-label { font-size: 12px; min-width: 55px; }
-  }
-  @media (max-width: 480px) {
-    .summary-grid { grid-template-columns: 1fr !important; }
-    .sum-row { grid-template-columns: 1fr 1fr !important; }
-    .card-amount { font-size: 18px !important; }
-  }
-
 </style>
 </head>
 <body>
@@ -280,7 +235,7 @@
     <div class="topbar-right">
       <div class="month-nav">
         <button class="month-btn" onclick="changeMonth(-1)">‹</button>
-        <span class="month-label" id="month-label">2026.05</span>
+        <span class="month-label" id="month-label"></span>
         <button class="month-btn" onclick="changeMonth(1)">›</button>
       </div>
       <button class="topbar-btn" title="데이터 관리" onclick="openDataManager()" style="position:relative;">💾</button>
@@ -512,9 +467,16 @@ const PAGE_SIZE = 10;
 const now = new Date();
 document.getElementById('today-date').textContent = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${['일','월','화','수','목','금','토'][now.getDay()]})`;
 let monthOffset = 0;
+const _baseYear  = now.getFullYear();
+const _baseMonth = now.getMonth(); // 0-indexed
+
+// 초기 월 라벨 세팅
+document.getElementById('month-label').textContent =
+  `${_baseYear}.${String(_baseMonth+1).padStart(2,'0')}`;
+
 function changeMonth(dir) {
   monthOffset += dir;
-  const b = new Date(2026, 4 + monthOffset, 1);
+  const b = new Date(_baseYear, _baseMonth + monthOffset, 1);
   document.getElementById('month-label').textContent = `${b.getFullYear()}.${String(b.getMonth()+1).padStart(2,'0')}`;
   renderTable(); updateSummary();
 }
@@ -617,7 +579,7 @@ function updateSummary() {
 function openPopup() {
   editId = null;
   document.getElementById('popup-title').textContent = '📝 내역 등록';
-  document.getElementById('f-date').value = `2026-05-${String(now.getDate()).padStart(2,'0')}`;
+  document.getElementById('f-date').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   document.getElementById('f-cat').value = '';
   document.getElementById('f-amount').value = '';
   document.getElementById('f-desc').value = '';
