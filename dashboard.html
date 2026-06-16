@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리집 가계부 - 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F4F6FB;
+    --surface: #FFFFFF;
+    --surface2: #F9FAFB;
+    --border: #E8ECF4;
+    --text1: #1A1D2E;
+    --text2: #5A6072;
+    --text3: #9BA3B8;
+    --blue: #4A7CFE;
+    --blue-light: #EEF3FF;
+    --green: #2EC4A5;
+    --green-light: #E8F9F5;
+    --red: #FF6B6B;
+    --red-light: #FFF0F0;
+    --amber: #F59E0B;
+    --amber-light: #FFFBEB;
+    --purple: #8B5CF6;
+    --purple-light: #F3EEFF;
+    --nav-w: 220px;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 24px rgba(0,0,0,.09);
+  }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text1);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+    
+  /* ── 메인 콘텐츠 ── */
+  .main {
+    margin-left: var(--nav-w);
+    flex: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 상단 헤더 */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-title { font-size: 17px; font-weight: 700; }
+  .topbar-date {
+    font-size: 12px; color: var(--text3);
+    background: var(--bg);
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-left: 8px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .topbar-btn {
+    width: 34px; height: 34px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px;
+    transition: all .15s;
+  }
+  .topbar-btn:hover { background: var(--bg); }
+  .month-nav { display: flex; align-items: center; gap: 8px; }
+  .month-label { font-size: 14px; font-weight: 600; min-width: 70px; text-align: center; }
+  .month-btn {
+    width: 28px; height: 28px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 13px; color: var(--text2);
+    transition: all .15s;
+  }
+  .month-btn:hover { background: var(--bg); }
+
+  /* 콘텐츠 영역 */
+  .content { padding: 24px 28px; }
+
+  /* ── 요약 카드 ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+    cursor: pointer;
+  }
+  .summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .summary-card.income::before { background: var(--green); }
+  .summary-card.expense::before { background: var(--red); }
+  .summary-card.fixed::before { background: var(--amber); }
+  .summary-card.debt::before { background: var(--purple); }
+
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-label { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: .03em; }
+  .card-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .income .card-icon { background: var(--green-light); }
+  .expense .card-icon { background: var(--red-light); }
+  .fixed .card-icon { background: var(--amber-light); }
+  .debt .card-icon { background: var(--purple-light); }
+
+  .card-amount { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .income .card-amount { color: var(--green); }
+  .expense .card-amount { color: var(--red); }
+  .fixed .card-amount { color: var(--amber); }
+  .debt .card-amount { color: var(--purple); }
+
+  .card-sub { font-size: 11px; color: var(--text3); }
+  .card-trend {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 7px; border-radius: 20px;
+    margin-top: 6px;
+  }
+  .trend-up { background: #FFF0F0; color: var(--red); }
+  .trend-down { background: var(--green-light); color: var(--green); }
+  .trend-same { background: var(--bg); color: var(--text3); }
+
+  /* ── 빠른 메뉴 ── */
+  .quick-menu {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+  }
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .quick-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px;
+    padding: 18px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .quick-item:hover { border-color: var(--blue); background: var(--blue-light); transform: translateY(-1px); }
+  .quick-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .quick-label { font-size: 12.5px; font-weight: 600; color: var(--text1); }
+
+  /* ── 하단 2열 레이아웃 ── */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .bottom-grid-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  /* 카테고리 지출 추이 */
+  .cat-chart-wrap { position: relative; width: 100%; height: 220px; }
+
+  /* 카테고리 순위 */
+  .rank-list { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+  .rank-item { display: flex; align-items: center; gap: 12px; }
+  .rank-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .rank-1 { background: #FFF3CD; color: #856404; }
+  .rank-2 { background: #E8E8E8; color: #555; }
+  .rank-3 { background: #FFE5D0; color: #8B4513; }
+  .rank-other { background: var(--bg); color: var(--text3); }
+
+  .rank-label { font-size: 13px; font-weight: 500; flex: 1; }
+  .rank-bar-wrap { flex: 2; height: 6px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+  .rank-bar { height: 100%; border-radius: 99px; transition: width .6s ease; }
+  .rank-amount { font-size: 12px; font-weight: 600; color: var(--text2); min-width: 70px; text-align: right; }
+
+  /* 부채 비율 도넛 */
+  .debt-wrap { display: flex; align-items: center; gap: 20px; }
+  .donut-wrap { position: relative; width: 160px; height: 160px; flex-shrink: 0; }
+  .donut-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .donut-center .total { font-size: 11px; color: var(--text3); }
+  .donut-center .amount { font-size: 14px; font-weight: 700; }
+  .debt-legend { flex: 1; }
+  .debt-legend-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .debt-legend-item:last-child { border-bottom: none; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { font-size: 12px; flex: 1; }
+  .legend-pct { font-size: 12px; font-weight: 600; color: var(--text2); }
+
+  /* 수입/지출 현황 */
+  .income-expense-chart { position: relative; width: 100%; height: 220px; }
+
+  /* 월 마감 배너 */
+  .close-banner {
+    background: linear-gradient(135deg, #4A7CFE 0%, #8B5CF6 100%);
+    border-radius: var(--radius);
+    padding: 16px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+    color: #fff;
+  }
+  .close-banner .info { display: flex; align-items: center; gap: 12px; }
+  .close-banner .icon { font-size: 24px; }
+  .close-banner .title { font-size: 14px; font-weight: 700; }
+  .close-banner .desc { font-size: 12px; opacity: .8; margin-top: 2px; }
+  .close-btn {
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.3);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .close-btn:hover { background: rgba(255,255,255,.3); }
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  /* ── 사이드 네비 (공통) ── */
+  .nav { width:220px; background:#FFFFFF; border-right:1px solid #E8ECF4; display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:9999; overflow:hidden; }
+  .nav-logo { padding:24px 20px 20px; border-bottom:1px solid #E8ECF4; flex-shrink:0; }
+  .nav-logo .logo-icon { width:36px; height:36px; background:#4A7CFE; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:10px; }
+  .nav-logo .logo-title { font-size:16px; font-weight:700; color:#1A1D2E; }
+  .nav-logo .logo-sub { font-size:12px; color:#9BA3B8; margin-top:2px; }
+  .nav-menu { padding:16px 12px; flex:1; overflow-y:auto; overflow-x:hidden; }
+  .nav-section-label { font-size:10px; font-weight:600; color:#9BA3B8; letter-spacing:.08em; text-transform:uppercase; padding:8px 8px 6px; display:block; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; cursor:pointer; color:#5A6072; font-size:13.5px; font-weight:500; transition:all .15s; text-decoration:none; margin-bottom:2px; overflow:hidden; white-space:nowrap; }
+  .nav-item:hover { background:#F4F6FB; color:#1A1D2E; }
+  .nav-item.active { background:#EEF3FF; color:#4A7CFE; font-weight:600; }
+  .nav-item .icon { font-size:17px; width:20px; text-align:center; flex-shrink:0; }
+  .nav-footer { padding:16px 12px; border-top:1px solid #E8ECF4; flex-shrink:0; }
+  .nav-profile { display:flex; align-items:center; gap:10px; padding:10px 12px; }
+  .nav-avatar { width:32px; height:32px; background:#EEF3FF; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#4A7CFE; flex-shrink:0; }
+  .nav-profile-info .name { font-size:13px; font-weight:600; }
+  .nav-profile-info .role { font-size:11px; color:#9BA3B8; }
+
+  /* ── 모바일 반응형 ── */
+  @media (max-width: 768px) {
+    .nav {
+      width: 100%;
+      height: 56px;
+      flex-direction: row;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: auto;
+      border-right: none;
+      border-bottom: 1px solid #E8ECF4;
+      z-index: 9999;
+      overflow: visible;
+    }
+    .nav-logo { padding: 0 16px; border-bottom: none; border-right: 1px solid #E8ECF4; display:flex; align-items:center; flex-direction:row; gap:8px; min-width:fit-content; }
+    .nav-logo .logo-icon { margin-bottom: 0; width:28px; height:28px; font-size:14px; }
+    .nav-logo .logo-title { font-size: 13px; }
+    .nav-logo .logo-sub { display: none; }
+    .nav-menu { padding: 0 8px; flex-direction: row; display:flex; overflow-x: auto; overflow-y: hidden; align-items: center; flex:1; gap:2px; }
+    .nav-section-label { display: none; }
+    .nav-item { padding: 6px 10px; font-size: 11px; white-space: nowrap; margin-bottom: 0; flex-shrink:0; }
+    .nav-item .icon { font-size: 14px; width: 16px; }
+    .nav-footer { display: none; }
+    .main { margin-left: 0; margin-top: 56px; }
+    .topbar { padding: 0 14px; height: 50px; }
+    .topbar-title { font-size: 14px; }
+    .content { padding: 14px; }
+    .summary-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+    .bottom-grid, .bottom-grid-3, .grid-2, .grid-3, .grid-3-1 { grid-template-columns: 1fr !important; }
+    .quick-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .sum-row { grid-template-columns: repeat(2, 1fr) !important; }
+    .debt-amounts { grid-template-columns: repeat(3, 1fr) !important; }
+    .main-layout { flex-direction: column !important; }
+    .left-col, .right-col { width: 100% !important; }
+    .period-tabs { gap: 3px; }
+    .period-tab { padding: 4px 8px; font-size: 11px; }
+    .month-nav { gap: 4px; }
+    .month-label { font-size: 12px; min-width: 55px; }
+  }
+  @media (max-width: 480px) {
+    .summary-grid { grid-template-columns: 1fr !important; }
+    .sum-row { grid-template-columns: 1fr 1fr !important; }
+    .card-amount { font-size: 18px !important; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- 사이드 네비게이션 -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="logo-icon">💰</div>
+    <div class="logo-title">우리집 가계부</div>
+    <div class="logo-sub">스마트 재정 관리</div>
+  </div>
+  <div class="nav-menu">
+    <span class="nav-section-label">메인</span>
+    <a class="nav-item active" href="dashboard.html"><span class="icon">🏠</span> 대시보드</a>
+    <span class="nav-section-label" style="margin-top:12px;">관리</span>
+    <a class="nav-item" href="ledger.html"><span class="icon">📒</span> 가계부 관리</a>
+    <a class="nav-item" href="inquiry.html"><span class="icon">📅</span> 일/월별 조회</a>
+    <a class="nav-item" href="fixed.html"><span class="icon">🔒</span> 고정지출 관리</a>
+    <a class="nav-item" href="debt.html"><span class="icon">💳</span> 부채 관리</a>
+    <span class="nav-section-label" style="margin-top:12px;">분석</span>
+    <a class="nav-item" href="graph.html"><span class="icon">📊</span> 지출 분석 그래프</a>
+    <a class="nav-item" href="report.html"><span class="icon">📈</span> 월별 리포트</a>
+  </div>
+  <div class="nav-footer">
+    <div class="nav-profile">
+      <div class="nav-avatar">김</div>
+      <div class="nav-profile-info">
+        <div class="name">김재웅</div>
+        <div class="role">가계부 관리자</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- 메인 콘텐츠 -->
+<main class="main">
+
+  <!-- 상단 헤더 -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">대시보드</span>
+      <span class="topbar-date" id="today-date"></span>
+    </div>
+    <div class="topbar-right">
+      <div class="month-nav">
+        <button class="month-btn" onclick="changeMonth(-1)">‹</button>
+        <span class="month-label" id="month-label"></span>
+        <button class="month-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <button class="topbar-btn" title="데이터 관리" onclick="openDataManager()" style="position:relative;">💾</button>
+      <button class="topbar-btn" title="새로고침">🔄</button>
+      <button class="topbar-btn" title="알림">🔔</button>
+    </div>
+  </div>
+
+  <!-- 콘텐츠 -->
+  <div class="content">
+
+    <!-- 월 마감 배너 -->
+    <div class="close-banner" id="close-banner">
+      <div class="info">
+        <div class="icon" id="banner-icon">📋</div>
+        <div>
+          <div class="title" id="banner-title"></div>
+          <div class="desc" id="banner-desc"></div>
+        </div>
+      </div>
+      <button class="close-btn" id="banner-btn" onclick="openClosingPopup()">월 마감 처리 →</button>
+    </div>
+
+    <!-- 요약 카드 4개 -->
+    <div class="summary-grid">
+      <div class="summary-card income">
+        <div class="card-header">
+          <span class="card-label">이번 달 수입</span>
+          <div class="card-icon">💵</div>
+        </div>
+        <div class="card-amount" id="income-amount">-</div>
+        <div class="card-sub">전월 대비</div>
+        <div class="card-trend trend-same" id="income-trend">-</div>
+      </div>
+
+      <div class="summary-card expense">
+        <div class="card-header">
+          <span class="card-label">이번 달 지출</span>
+          <div class="card-icon">💸</div>
+        </div>
+        <div class="card-amount" id="expense-amount">-</div>
+        <div class="card-sub">전월 대비</div>
+        <div class="card-trend trend-same" id="expense-trend">-</div>
+      </div>
+
+      <div class="summary-card fixed">
+        <div class="card-header">
+          <span class="card-label">고정 지출</span>
+          <div class="card-icon">📌</div>
+        </div>
+        <div class="card-amount" id="fixed-amount">-</div>
+        <div class="card-sub" id="fixed-sub">-</div>
+        <div class="card-trend trend-same" id="fixed-trend">→ 매월 고정</div>
+      </div>
+
+      <div class="summary-card debt">
+        <div class="card-header">
+          <span class="card-label">부채 총액</span>
+          <div class="card-icon">🏦</div>
+        </div>
+        <div class="card-amount" id="debt-amount">-</div>
+        <div class="card-sub" id="debt-sub">-</div>
+        <div class="card-trend trend-same" id="debt-trend">-</div>
+      </div>
+    </div>
+
+    <!-- 빠른 메뉴 -->
+    <div class="quick-menu">
+      <div class="section-title"><span class="dot"></span> 빠른 메뉴</div>
+      <div class="quick-grid">
+        <div class="quick-item" onclick="location.href='ledger.html'">
+          <div class="quick-icon" style="background:#EEF3FF">📒</div>
+          <span class="quick-label">가계부 관리</span>
+        </div>
+        <div class="quick-item" onclick="location.href='inquiry.html'">
+          <div class="quick-icon" style="background:#E8F9F5">📅</div>
+          <span class="quick-label">일/월별 조회</span>
+        </div>
+        <div class="quick-item" onclick="location.href='fixed.html'">
+          <div class="quick-icon" style="background:#FFFBEB">🔒</div>
+          <span class="quick-label">고정지출 관리</span>
+        </div>
+        <div class="quick-item" onclick="location.href='debt.html'">
+          <div class="quick-icon" style="background:#F3EEFF">💳</div>
+          <span class="quick-label">부채 관리</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 차트 행 1: 카테고리 추이 + 순위 -->
+    <div class="bottom-grid-3">
+      <div class="chart-card">
+        <div class="section-title"><span class="dot"></span> 월별 지출 추이 (카테고리별 TOP3)</div>
+        <div id="cat-legend-row" style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;"></div>
+        <div class="cat-chart-wrap">
+          <canvas id="catChart" role="img" aria-label="월별 카테고리별 지출 추이 막대 그래프">월별 카테고리별 지출 추이를 나타내는 그래프입니다.</canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="section-title"><span class="dot"></span> 이번 달 지출 순위</div>
+        <div class="rank-list" id="rank-list"></div>
+      </div>
+    </div>
+
+    <!-- 차트 행 2: 수입/지출 현황 + 부채 비율 -->
+    <div class="bottom-grid">
+      <div class="chart-card">
+        <div class="section-title"><span class="dot"></span> 월별 수입/지출 현황</div>
+        <div style="display:flex;gap:12px;margin-bottom:14px;">
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)">
+            <span style="width:10px;height:10px;border-radius:2px;background:#2EC4A5;display:inline-block"></span>수입
+          </span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)">
+            <span style="width:10px;height:10px;border-radius:2px;background:#FF6B6B;display:inline-block"></span>지출
+          </span>
+        </div>
+        <div class="income-expense-chart">
+          <canvas id="incomeExpenseChart" role="img" aria-label="월별 수입과 지출 비교 막대 그래프">월별 수입 대비 지출 현황을 나타냅니다.</canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="section-title"><span class="dot"></span> 부채별 비율</div>
+        <div class="debt-wrap">
+          <div class="donut-wrap">
+            <canvas id="debtChart" role="img" aria-label="고정지출 카테고리별 비율 도넛 차트">고정지출 카테고리별 비율을 나타냅니다.</canvas>
+            <div class="donut-center">
+              <div class="total">총 부채</div>
+              <div class="amount" id="donut-amount">-</div>
+            </div>
+          </div>
+          <div class="debt-legend" id="debt-legend"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- 고정지출 팝업 -->
+<div id="fixed-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:var(--radius);width:520px;max-width:95vw;overflow:hidden;box-shadow:var(--shadow-md);">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:16px;font-weight:700;">🔒 고정지출 관리</div>
+      <button onclick="closeFixed()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="text-align:left;padding:8px;color:var(--text3);font-weight:600;">항목명</th>
+            <th style="text-align:left;padding:8px;color:var(--text3);font-weight:600;">카테고리</th>
+            <th style="text-align:right;padding:8px;color:var(--text3);font-weight:600;">금액</th>
+            <th style="text-align:center;padding:8px;color:var(--text3);font-weight:600;">관리</th>
+          </tr>
+        </thead>
+        <tbody id="fixed-tbody"></tbody>
+      </table>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;color:var(--text2);">총 고정지출</span>
+        <span id="fixed-popup-total" style="font-size:16px;font-weight:700;color:var(--amber);">-</span>
+      </div>
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeFixed()" style="padding:9px 20px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;font-size:13px;">닫기</button>
+      <button style="padding:9px 20px;border:none;border-radius:var(--radius-sm);background:var(--blue);color:#fff;cursor:pointer;font-size:13px;font-weight:600;">+ 항목 추가</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  localStorage 키
+// ══════════════════════════════════════
+const LS_LEDGER = 'household_ledger';
+const LS_FIXED  = 'household_fixed';
+const LS_DEBT   = 'household_debt';
+
+const CAT_COLORS = {
+  '식비':'#2EC4A5','주거/관리비':'#F59E0B','의류/쇼핑':'#4A7CFE',
+  '교통비':'#8B5CF6','문화/여가':'#FF6B6B','의료/건강':'#EC4899',
+  '교육':'#06B6D4','보험':'#F97316','저축':'#10B981','기타':'#9BA3B8',
+  '급여':'#14B8A6','기타수입':'#6366F1'
+};
+const PALETTE = ['#4A7CFE','#2EC4A5','#F59E0B','#FF6B6B','#8B5CF6','#EC4899','#06B6D4','#F97316'];
+
+// ── localStorage 읽기 유틸 ──
+function readLS(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) { return []; }
+}
+
+// ── 날짜 초기화 ──
+const d = new Date();
+document.getElementById('today-date').textContent = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${['일','월','화','수','목','금','토'][d.getDay()]})`;
+
+let currentMonthOffset = 0;
+const _today = new Date();
+const _baseYear  = _today.getFullYear();
+const _baseMonth = _today.getMonth(); // 0-indexed
+
+// 초기 월 라벨 세팅
+document.getElementById('month-label').textContent =
+  `${_baseYear}.${String(_today.getMonth()+1).padStart(2,'0')}`;
+
+function changeMonth(dir) {
+  currentMonthOffset += dir;
+  const base = new Date(_baseYear, _baseMonth, 1);
+  base.setMonth(base.getMonth() + currentMonthOffset);
+  document.getElementById('month-label').textContent =
+    `${base.getFullYear()}.${String(base.getMonth()+1).padStart(2,'0')}`;
+  renderDashboard();
+}
+
+// ══════════════════════════════════════
+//  현재 표시 월 계산
+// ══════════════════════════════════════
+function getCurrentYM() {
+  const base = new Date(_baseYear, _baseMonth + currentMonthOffset, 1);
+  return {
+    year  : base.getFullYear(),
+    month : base.getMonth() + 1,
+    ymKey : `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}`
+  };
+}
+
+// ══════════════════════════════════════
+//  대시보드 전체 렌더
+// ══════════════════════════════════════
+function renderDashboard() {
+  const { ymKey } = getCurrentYM();
+
+  // 전월 ymKey 계산
+  const base = new Date(_baseYear, _baseMonth + currentMonthOffset, 1);
+  const prevBase = new Date(base.getFullYear(), base.getMonth() - 1, 1);
+  const prevYmKey = `${prevBase.getFullYear()}-${String(prevBase.getMonth()+1).padStart(2,'0')}`;
+
+  const ledger  = readLS(LS_LEDGER);
+  const fixedLS = readLS(LS_FIXED);
+  const debtLS  = readLS(LS_DEBT);
+
+  // ── 1. 이번달 / 전월 수입·지출 ──
+  const thisMonth  = ledger.filter(r => r.date && r.date.startsWith(ymKey));
+  const prevMonth  = ledger.filter(r => r.date && r.date.startsWith(prevYmKey));
+
+  const incomeAmt  = thisMonth.filter(r => r.type === '수입').reduce((s,r) => s+(r.amount||0), 0);
+  const expenseAmt = thisMonth.filter(r => r.type === '지출').reduce((s,r) => s+(r.amount||0), 0);
+  const prevIncome  = prevMonth.filter(r => r.type === '수입').reduce((s,r) => s+(r.amount||0), 0);
+  const prevExpense = prevMonth.filter(r => r.type === '지출').reduce((s,r) => s+(r.amount||0), 0);
+
+  document.getElementById('income-amount').textContent  = '₩' + incomeAmt.toLocaleString();
+  document.getElementById('expense-amount').textContent = '₩' + expenseAmt.toLocaleString();
+
+  // 수입 전월 대비 배지
+  setTrendBadge('income-trend', incomeAmt, prevIncome, 'income');
+  // 지출 전월 대비 배지 (지출은 증가=나쁨, 감소=좋음 → 반전)
+  setTrendBadge('expense-trend', expenseAmt, prevExpense, 'expense');
+
+  // ── 2. 고정지출 (fixed 활성 월금액 합계) ──
+  const activeFixed  = fixedLS.filter(f => f.active !== false);
+  const fixedMonthly = activeFixed.reduce((s,f) => s+(f.amount||0), 0);
+  document.getElementById('fixed-amount').textContent = '₩' + fixedMonthly.toLocaleString();
+
+  const fixedSubEl = document.getElementById('fixed-sub');
+  if (fixedSubEl) fixedSubEl.textContent = `활성 ${activeFixed.length}개 항목`;
+
+  const fixedTrendEl = document.getElementById('fixed-trend');
+  if (fixedTrendEl) {
+    fixedTrendEl.className = 'card-trend trend-same';
+    fixedTrendEl.textContent = `→ 매월 고정`;
+  }
+
+  // ── 3. 부채총액 (debt balance 합계) ──
+  const debtTotal = debtLS.reduce((s,d) => s+(d.balance||0), 0);
+  document.getElementById('debt-amount').textContent = '₩' + debtTotal.toLocaleString();
+
+  const debtSubEl = document.getElementById('debt-sub');
+  if (debtSubEl) debtSubEl.textContent = `${debtLS.length}개 항목`;
+
+  const debtTrendEl = document.getElementById('debt-trend');
+  if (debtTrendEl) {
+    debtTrendEl.className = 'card-trend trend-same';
+    debtTrendEl.textContent = '→ 현재 잔액 합계';
+  }
+
+  // ── 4. 이번달 지출 카테고리 순위 ──
+  renderRankList(thisMonth.filter(r => r.type === '지출'));
+
+  // ── 5. 부채 도넛 ──
+  renderDebtDonut(debtLS);
+
+  // ── 6. 차트 (최근 6개월 실데이터) ──
+  renderCharts(ledger);
+
+  // ── 7. 고정지출 팝업 테이블 ──
+  renderFixedPopup(activeFixed, fixedMonthly);
+}
+
+// ── 전월 대비 배지 업데이트 ──
+function setTrendBadge(elId, current, prev, type) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!prev) {
+    el.className = 'card-trend trend-same';
+    el.textContent = '→ 전월 데이터 없음';
+    return;
+  }
+  const diff    = current - prev;
+  const diffPct = Math.abs(Math.round(diff / prev * 100 * 10) / 10);
+  const diffAmt = Math.abs(diff).toLocaleString();
+
+  if (diff === 0) {
+    el.className = 'card-trend trend-same';
+    el.textContent = '→ 전월 동일';
+  } else if (type === 'income') {
+    // 수입: 증가=좋음(green), 감소=나쁨(red)
+    if (diff > 0) {
+      el.className = 'card-trend trend-down'; // green
+      el.textContent = `↑ ${diffPct}% 증가`;
+    } else {
+      el.className = 'card-trend trend-up';   // red
+      el.textContent = `↓ ${diffPct}% 감소`;
+    }
+  } else {
+    // 지출: 증가=나쁨(red), 감소=좋음(green)
+    if (diff > 0) {
+      el.className = 'card-trend trend-up';   // red
+      el.textContent = `↑ ${diffPct}% 증가`;
+    } else {
+      el.className = 'card-trend trend-down'; // green
+      el.textContent = `↓ ${diffPct}% 감소`;
+    }
+  }
+}
+
+// ── 지출 카테고리 순위 ──
+function renderRankList(expRows) {
+  const catMap = {};
+  expRows.forEach(r => { catMap[r.category] = (catMap[r.category]||0) + (r.amount||0); });
+  const sorted = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+  const total  = sorted.reduce((s,[,v]) => s+v, 0) || 1;
+  const maxAmt = sorted[0] ? sorted[0][1] : 1;
+  const rankEl = document.getElementById('rank-list');
+  if (!sorted.length) {
+    rankEl.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">지출 데이터가 없습니다</div>';
+    return;
+  }
+  rankEl.innerHTML = sorted.slice(0,6).map(([name, amt], i) => {
+    const color = CAT_COLORS[name] || PALETTE[i % PALETTE.length];
+    return `<div class="rank-item">
+      <div class="rank-num ${i < 3 ? 'rank-'+(i+1) : 'rank-other'}">${i+1}</div>
+      <div class="rank-label">${name}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(amt/maxAmt*100)}%;background:${color}"></div></div>
+      <div class="rank-amount">₩${amt.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 부채 도넛 ──
+let _debtChart = null;
+function renderDebtDonut(debtLS) {
+  const legendEl = document.getElementById('debt-legend');
+  if (!debtLS.length) {
+    legendEl.innerHTML = '<div style="color:var(--text3);font-size:12px;">부채 데이터가 없습니다</div>';
+    return;
+  }
+  const debtTotal = debtLS.reduce((s,d) => s+(d.balance||0), 0);
+  const colors    = debtLS.map((d,i) => d.color || PALETTE[i % PALETTE.length]);
+
+  // 도넛 중앙
+  const amtEl = document.getElementById('donut-amount');
+  if (amtEl) amtEl.textContent = Math.round(debtTotal/10000).toLocaleString() + '만';
+
+  legendEl.innerHTML = debtLS.map((d,i) => {
+    const pct = Math.round((d.balance||0)/debtTotal*100);
+    return `<div class="debt-legend-item">
+      <div class="legend-dot" style="background:${colors[i]}"></div>
+      <div class="legend-name">${d.name}</div>
+      <div class="legend-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  if (_debtChart) _debtChart.destroy();
+  _debtChart = new Chart(document.getElementById('debtChart'), {
+    type: 'doughnut',
+    data: {
+      labels: debtLS.map(d => d.name),
+      datasets: [{ data: debtLS.map(d => d.balance||0), backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ₩${ctx.raw.toLocaleString()} (${Math.round(ctx.raw/debtTotal*100)}%)` } }
+      }
+    }
+  });
+}
+
+// ── 최근 6개월 차트 ──
+let _catChart = null, _ieChart = null;
+function renderCharts(ledger) {
+  // 최근 6개월 레이블 생성
+  const monthList = [];
+  for (let i = 5; i >= 0; i--) {
+    const b = new Date(_baseYear, _baseMonth + currentMonthOffset - i, 1);
+    monthList.push({
+      label : `${b.getMonth()+1}월`,
+      ymKey : `${b.getFullYear()}-${String(b.getMonth()+1).padStart(2,'0')}`
+    });
+  }
+
+  // 각 월별 수입/지출/카테고리별 집계
+  const incArr = [], expArr = [], catMonthly = {};
+  monthList.forEach(({ ymKey }) => {
+    const rows   = ledger.filter(r => r.date && r.date.startsWith(ymKey));
+    const inc    = rows.filter(r => r.type==='수입').reduce((s,r)=>s+(r.amount||0),0);
+    const exp    = rows.filter(r => r.type==='지출').reduce((s,r)=>s+(r.amount||0),0);
+    incArr.push(inc);
+    expArr.push(exp);
+
+    // 카테고리별 집계
+    rows.filter(r=>r.type==='지출').forEach(r => {
+      if (!catMonthly[r.category]) catMonthly[r.category] = Array(6).fill(0);
+    });
+  });
+
+  // 카테고리별 월별 금액
+  monthList.forEach(({ ymKey }, mi) => {
+    const rows = ledger.filter(r => r.date && r.date.startsWith(ymKey) && r.type==='지출');
+    rows.forEach(r => {
+      if (!catMonthly[r.category]) catMonthly[r.category] = Array(6).fill(0);
+      catMonthly[r.category][mi] += (r.amount||0);
+    });
+  });
+
+  // 상위 3개 카테고리 선택 (전체 합산 기준)
+  const topCats = Object.entries(catMonthly)
+    .map(([name, vals]) => ({ name, total: vals.reduce((s,v)=>s+v,0), vals }))
+    .sort((a,b) => b.total - a.total)
+    .slice(0, 3);
+
+  const labels = monthList.map(m => m.label);
+
+  // 1. 카테고리 추이 차트
+  if (_catChart) _catChart.destroy();
+  const catDatasets = topCats.map((c, i) => ({
+    label: c.name,
+    data: c.vals,
+    backgroundColor: CAT_COLORS[c.name] || PALETTE[i],
+    borderRadius: 4,
+    borderSkipped: false
+  }));
+
+  // 범례 업데이트
+  const legendRow = document.getElementById('cat-legend-row');
+  if (legendRow) {
+    legendRow.innerHTML = topCats.map((c,i) => {
+      const color = CAT_COLORS[c.name] || PALETTE[i];
+      return `<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)">
+        <span style="width:10px;height:10px;border-radius:2px;background:${color};display:inline-block"></span>${c.name}
+      </span>`;
+    }).join('');
+  }
+
+  _catChart = new Chart(document.getElementById('catChart'), {
+    type: 'bar',
+    data: { labels, datasets: catDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ₩${ctx.raw.toLocaleString()}`}} },
+      scales: {
+        x: { grid:{display:false}, ticks:{color:'#9BA3B8',font:{size:11}} },
+        y: { grid:{color:'#F0F2F8'}, ticks:{color:'#9BA3B8',font:{size:11},callback:v=>(v/10000)+'만'} }
+      }
+    }
+  });
+
+  // 2. 수입/지출 현황 차트
+  if (_ieChart) _ieChart.destroy();
+  _ieChart = new Chart(document.getElementById('incomeExpenseChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'수입', data:incArr, backgroundColor:'#2EC4A5', borderRadius:4, borderSkipped:false },
+        { label:'지출', data:expArr, backgroundColor:'#FF6B6B', borderRadius:4, borderSkipped:false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ₩${ctx.raw.toLocaleString()}`}} },
+      scales: {
+        x: { grid:{display:false}, ticks:{color:'#9BA3B8',font:{size:11}} },
+        y: { grid:{color:'#F0F2F8'}, ticks:{color:'#9BA3B8',font:{size:11},callback:v=>(v/10000)+'만'} }
+      }
+    }
+  });
+}
+
+// ── 고정지출 팝업 테이블 ──
+function renderFixedPopup(activeFixed, fixedMonthly) {
+  const fixedTbody = document.getElementById('fixed-tbody');
+  if (!fixedTbody) return;
+  fixedTbody.innerHTML = activeFixed.length
+    ? activeFixed.map(f => `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 8px;font-weight:500">${f.name}</td>
+        <td style="padding:10px 8px;color:var(--text2)">${f.category||'-'}</td>
+        <td style="padding:10px 8px;text-align:right;font-weight:600">₩${(f.amount||0).toLocaleString()}</td>
+        <td style="padding:10px 8px;text-align:center">
+          <button onclick="location.href='fixed.html'" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;">관리</button>
+        </td>
+      </tr>`).join('')
+    : `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">등록된 고정지출이 없습니다</td></tr>`;
+
+  // 총 고정지출 합계 업데이트
+  const totalEl = document.getElementById('fixed-popup-total');
+  if (totalEl) totalEl.textContent = '₩' + fixedMonthly.toLocaleString();
+}
+
+function closeFixed() {
+  document.getElementById('fixed-popup').style.display = 'none';
+}
+
+// ── 최초 실행 ──
+renderDashboard();
+</script>
+
+<!-- 데이터 관리 팝업 -->
+<div id="data-manager-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;width:520px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.15);overflow:hidden;">
+    
+    <!-- 헤더 -->
+    <div style="padding:20px 24px;border-bottom:1px solid #E8ECF4;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#4A7CFE,#8B5CF6);color:#fff;">
+      <div>
+        <div style="font-size:16px;font-weight:700;">💾 데이터 관리</div>
+        <div style="font-size:12px;opacity:.85;margin-top:2px;">JSON 내보내기 / 불러오기 / 현황 조회</div>
+      </div>
+      <button onclick="closeDataManager()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+
+    <!-- 저장 현황 -->
+    <div style="padding:18px 24px;border-bottom:1px solid #E8ECF4;">
+      <div style="font-size:12px;font-weight:700;color:#9BA3B8;margin-bottom:12px;letter-spacing:.05em;">📊 현재 저장 현황</div>
+      <div id="dm-status" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    </div>
+
+    <!-- JSON 뷰어 -->
+    <div style="padding:18px 24px;border-bottom:1px solid #E8ECF4;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:#9BA3B8;letter-spacing:.05em;">🔍 데이터 미리보기</div>
+        <select id="dm-select" onchange="previewData()" style="height:28px;padding:0 8px;border:1px solid #E8ECF4;border-radius:7px;font-size:12px;font-family:inherit;background:#F4F6FB;outline:none;">
+          <option value="household_ledger">가계부 내역</option>
+          <option value="household_fixed">고정지출</option>
+          <option value="household_debt">부채</option>
+          <option value="household_pay_history">상환 이력</option>
+          <option value="fixed_history">마감 이력</option>
+        </select>
+      </div>
+      <div id="dm-preview" style="background:#1A1D2E;border-radius:10px;padding:14px;max-height:180px;overflow-y:auto;font-family:monospace;font-size:11.5px;color:#A8D8A8;line-height:1.6;white-space:pre-wrap;word-break:break-all;"></div>
+    </div>
+
+    <!-- 버튼 영역 -->
+    <div style="padding:18px 24px;display:flex;flex-direction:column;gap:10px;">
+      
+      <!-- 내보내기 -->
+      <div style="font-size:12px;font-weight:700;color:#9BA3B8;margin-bottom:2px;letter-spacing:.05em;">📤 내보내기</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="exportSingle()" style="flex:1;height:38px;border:none;border-radius:10px;background:#EEF3FF;color:#4A7CFE;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;" onmouseover="this.style.background='#D8E8FF'" onmouseout="this.style.background='#EEF3FF'">
+          📄 선택 항목 저장
+        </button>
+        <button onclick="exportAll()" style="flex:1;height:38px;border:none;border-radius:10px;background:#4A7CFE;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;" onmouseover="this.style.background='#3A6CE8'" onmouseout="this.style.background='#4A7CFE'">
+          💾 전체 데이터 저장
+        </button>
+      </div>
+
+      <!-- 불러오기 -->
+      <div style="font-size:12px;font-weight:700;color:#9BA3B8;margin-top:4px;margin-bottom:2px;letter-spacing:.05em;">📥 불러오기</div>
+      <div style="display:flex;gap:8px;">
+        <label style="flex:1;height:38px;border:1.5px dashed #E8ECF4;border-radius:10px;background:#F9FAFB;color:#5A6072;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .15s;" onmouseover="this.style.borderColor='#4A7CFE';this.style.color='#4A7CFE'" onmouseout="this.style.borderColor='#E8ECF4';this.style.color='#5A6072'">
+          📂 JSON 파일 선택
+          <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+        </label>
+        <button onclick="clearAll()" style="flex:1;height:38px;border:1.5px solid #FFD0D0;border-radius:10px;background:#FFF0F0;color:#FF6B6B;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;" onmouseover="this.style.background='#FFD0D0'" onmouseout="this.style.background='#FFF0F0'">
+          🗑️ 전체 초기화
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 하단 안내 -->
+    <div style="padding:12px 24px;background:#F9FAFB;border-top:1px solid #E8ECF4;">
+      <div style="font-size:11px;color:#9BA3B8;line-height:1.6;">
+        💡 <strong>전체 데이터 저장</strong>으로 백업 후 Claude Code에 파일을 전달하면 DB 연동 작업이 가능합니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 데이터 관리 팝업 ──
+const DM_KEYS = {
+  'household_ledger': '가계부 내역',
+  'household_fixed': '고정지출',
+  'household_debt': '부채',
+  'household_pay_history': '상환 이력',
+  'fixed_history': '마감 이력',
+};
+
+function openDataManager() {
+  document.getElementById('data-manager-overlay').style.display = 'flex';
+  refreshStatus();
+  previewData();
+}
+function closeDataManager() {
+  document.getElementById('data-manager-overlay').style.display = 'none';
+}
+
+function refreshStatus() {
+  const el = document.getElementById('dm-status');
+  el.innerHTML = Object.entries(DM_KEYS).map(([key, label]) => {
+    const raw = localStorage.getItem(key);
+    let count = 0, size = 0;
+    if (raw) {
+      try { 
+        const parsed = JSON.parse(raw);
+        count = Array.isArray(parsed) ? parsed.length : 1;
+      } catch(e) {}
+      size = (raw.length / 1024).toFixed(1);
+    }
+    const color = count > 0 ? '#2EC4A5' : '#9BA3B8';
+    return `<div style="background:#F9FAFB;border:1px solid #E8ECF4;border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:#1A1D2E;">${label}</div>
+        <div style="font-size:11px;color:#9BA3B8;margin-top:2px;">${size}KB</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:16px;font-weight:700;color:${color};">${count}</div>
+        <div style="font-size:10px;color:#9BA3B8;">건</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function previewData() {
+  const key = document.getElementById('dm-select').value;
+  const raw = localStorage.getItem(key);
+  const el = document.getElementById('dm-preview');
+  if (!raw) {
+    el.textContent = '// 데이터가 없습니다';
+    el.style.color = '#9BA3B8';
+    return;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    el.textContent = JSON.stringify(parsed, null, 2);
+    el.style.color = '#A8D8A8';
+  } catch(e) {
+    el.textContent = raw;
+    el.style.color = '#FFB3B3';
+  }
+}
+
+function exportSingle() {
+  const key = document.getElementById('dm-select').value;
+  const label = DM_KEYS[key];
+  const raw = localStorage.getItem(key);
+  if (!raw) { alert(`"${label}" 데이터가 없습니다.`); return; }
+  const data = { exportDate: new Date().toISOString(), key, label, data: JSON.parse(raw) };
+  downloadJSON(data, `${key}_${getDateStr()}.json`);
+}
+
+function exportAll() {
+  const allData = { exportDate: new Date().toISOString(), version: '1.0' };
+  Object.keys(DM_KEYS).forEach(key => {
+    const raw = localStorage.getItem(key);
+    allData[key] = raw ? JSON.parse(raw) : [];
+  });
+  downloadJSON(allData, `household_backup_${getDateStr()}.json`);
+  alert('✅ 전체 데이터가 저장되었습니다!\n\nClaude Code에 이 파일을 전달하면\nDB 연동 작업을 진행할 수 있습니다.');
+}
+
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // 전체 백업 파일인지 확인
+      if (data.household_ledger !== undefined) {
+        // 전체 복원
+        if (!confirm(`전체 백업 파일을 불러옵니다.\n기존 데이터가 모두 교체됩니다.\n계속하시겠습니까?`)) return;
+        Object.keys(DM_KEYS).forEach(key => {
+          if (data[key] !== undefined) localStorage.setItem(key, JSON.stringify(data[key]));
+        });
+        alert('✅ 전체 데이터 복원 완료!');
+      } else if (data.key && data.data) {
+        // 단일 복원
+        if (!confirm(`"${data.label}" 데이터를 불러옵니다.\n기존 데이터가 교체됩니다.\n계속하시겠습니까?`)) return;
+        localStorage.setItem(data.key, JSON.stringify(data.data));
+        alert(`✅ "${data.label}" 복원 완료!`);
+      } else {
+        alert('❌ 올바른 백업 파일이 아닙니다.');
+        return;
+      }
+      refreshStatus();
+      previewData();
+      setTimeout(() => location.reload(), 500);
+    } catch(err) {
+      alert('❌ JSON 파일을 읽을 수 없습니다:\n' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function clearAll() {
+  if (!confirm('⚠️ 모든 데이터를 초기화합니다.\n이 작업은 되돌릴 수 없습니다.\n계속하시겠습니까?')) return;
+  Object.keys(DM_KEYS).forEach(key => localStorage.removeItem(key));
+  alert('✅ 초기화 완료');
+  refreshStatus();
+  previewData();
+}
+
+function getDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// 팝업 외부 클릭 닫기
+document.getElementById('data-manager-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('data-manager-overlay')) closeDataManager();
+});
+</script>
+
+
+<!-- ══════════════════════════════════════
+     월 마감 처리 팝업
+════════════════════════════════════════ -->
+<div id="closing-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;width:480px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;">
+
+    <!-- 헤더 -->
+    <div style="padding:20px 24px;background:linear-gradient(135deg,#4A7CFE,#8B5CF6);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:16px;font-weight:700;">📋 월 마감 처리</div>
+        <div style="font-size:12px;opacity:.8;margin-top:2px;" id="closing-popup-month"></div>
+      </div>
+      <button onclick="closeClosingPopup()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+
+    <!-- 결산 요약 -->
+    <div style="padding:22px 24px;border-bottom:1px solid #E8ECF4;">
+      <div style="font-size:12px;font-weight:700;color:#9BA3B8;letter-spacing:.05em;margin-bottom:14px;">📊 해당 월 결산 요약</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;" id="closing-summary"></div>
+    </div>
+
+    <!-- 마감 이력 (이미 마감된 경우) -->
+    <div id="closing-already-done" style="display:none;padding:16px 24px;background:#F0FFF8;border-bottom:1px solid #D0F0E0;">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#2EC4A5;font-weight:600;">
+        <span style="font-size:18px;">✅</span>
+        <span id="closing-already-text"></span>
+      </div>
+    </div>
+
+    <!-- 안내 문구 -->
+    <div style="padding:18px 24px;border-bottom:1px solid #E8ECF4;">
+      <div style="font-size:12px;color:#5A6072;line-height:1.7;" id="closing-guide">
+        ✔ 마감 처리 시 해당 월의 결산 내역이 <strong>마감 이력</strong>에 저장됩니다.<br>
+        ✔ 고정지출 및 가계부 데이터는 <strong>변경되지 않습니다.</strong><br>
+        ✔ 마감 이력은 💾 데이터 관리에서 확인할 수 있습니다.
+      </div>
+    </div>
+
+    <!-- 버튼 -->
+    <div style="padding:16px 24px;display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeClosingPopup()" style="padding:9px 20px;border:1px solid #E8ECF4;border-radius:10px;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#5A6072;">닫기</button>
+      <button id="closing-confirm-btn" onclick="doMonthClose()" style="padding:9px 24px;border:none;border-radius:10px;background:linear-gradient(135deg,#4A7CFE,#8B5CF6);color:#fff;cursor:pointer;font-size:13px;font-weight:700;">✅ 마감 확정</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  월 마감 처리 로직
+// ══════════════════════════════════════
+const LEDGER_KEY  = 'household_ledger';
+const HISTORY_KEY = 'fixed_history';
+
+// ── 현재 표시 월 = 오늘 월 인지 확인 ──
+function isCurrentMonth() {
+  const base  = new Date(_baseYear, _baseMonth + currentMonthOffset, 1);
+  const today = new Date();
+  return base.getFullYear() === today.getFullYear() &&
+         base.getMonth()    === today.getMonth();
+}
+
+// ── 배너 초기화 (페이지 로드 / 월 이동 시) ──
+function initBanner() {
+  const base = new Date(_baseYear, _baseMonth + currentMonthOffset, 1);
+  const curY = base.getFullYear();
+  const curM = base.getMonth() + 1;
+  const ymKey = `${curY}-${String(curM).padStart(2,'0')}`;
+
+  const titleEl = document.getElementById('banner-title');
+  const descEl  = document.getElementById('banner-desc');
+  const iconEl  = document.getElementById('banner-icon');
+  const btnEl   = document.getElementById('banner-btn');
+  const banner  = document.getElementById('close-banner');
+
+  if (isCurrentMonth()) {
+    // 현재 월 → 마감 가능 (중복 허용)
+    const today    = new Date();
+    const lastDay  = new Date(curY, curM, 0).getDate();
+    const daysLeft = lastDay - today.getDate();
+    const history  = getHistory();
+    const closedList = history.filter(h => h.yearMonth === ymKey);
+
+    iconEl.textContent  = '📋';
+    titleEl.textContent = `${curM}월 월 마감이 ${daysLeft}일 남았습니다`;
+    descEl.textContent  = closedList.length > 0
+      ? `이번 달 마감 ${closedList.length}회 기록됨 · 최근: ${formatDateTime(closedList[closedList.length-1].closedAt)}`
+      : '이번 달 수입/지출을 확인하고 마감 처리해 주세요.';
+    btnEl.textContent        = '월 마감 처리 →';
+    btnEl.onclick            = openClosingPopup;
+    btnEl.style.opacity      = '1';
+    btnEl.style.cursor       = 'pointer';
+    btnEl.style.pointerEvents = 'auto';
+    banner.style.background  = 'linear-gradient(135deg,#4A7CFE,#8B5CF6)';
+  } else {
+    // 다른 월 → 마감 불가
+    iconEl.textContent  = '🔒';
+    titleEl.textContent = `${curY}년 ${curM}월`;
+    descEl.textContent  = '해당월이 아니면 마감할 수 없습니다.';
+    btnEl.textContent        = '마감 불가';
+    btnEl.onclick            = showNotCurrentMonthError;
+    btnEl.style.opacity      = '0.55';
+    btnEl.style.cursor       = 'not-allowed';
+    btnEl.style.pointerEvents = 'auto';
+    banner.style.background  = 'linear-gradient(135deg,#9BA3B8,#5A6072)';
+  }
+}
+
+function showNotCurrentMonthError() {
+  const today = new Date();
+  alert(`⚠️ 해당월이 아니면 마감할 수 없습니다.\n\n마감 가능 월: ${today.getFullYear()}년 ${today.getMonth()+1}월\n\n오늘 날짜 월로 이동 후 마감해 주세요.`);
+}
+
+// ── 팝업 열기 ──
+function openClosingPopup() {
+  if (!isCurrentMonth()) { showNotCurrentMonthError(); return; }
+
+  const base  = new Date(_baseYear, _baseMonth + currentMonthOffset, 1);
+  const curY  = base.getFullYear();
+  const curM  = base.getMonth() + 1;
+  const ymKey = `${curY}-${String(curM).padStart(2,'0')}`;
+
+  document.getElementById('closing-popup-month').textContent = `${curY}년 ${curM}월`;
+
+  // 결산 요약 계산
+  const ledger    = getLedger();
+  const thisMonth = ledger.filter(r => r.date && r.date.startsWith(ymKey));
+  const income    = thisMonth.filter(r => r.type === '수입').reduce((s,r) => s+(r.amount||0), 0);
+  const expense   = thisMonth.filter(r => r.type === '지출').reduce((s,r) => s+(r.amount||0), 0);
+  const balance   = income - expense;
+
+  document.getElementById('closing-summary').innerHTML = `
+    <div style="background:#E8F9F5;border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:11px;color:#2EC4A5;font-weight:700;margin-bottom:6px;">총 수입</div>
+      <div style="font-size:17px;font-weight:800;color:#2EC4A5;">₩${income.toLocaleString()}</div>
+    </div>
+    <div style="background:#FFF0F0;border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:11px;color:#FF6B6B;font-weight:700;margin-bottom:6px;">총 지출</div>
+      <div style="font-size:17px;font-weight:800;color:#FF6B6B;">₩${expense.toLocaleString()}</div>
+    </div>
+    <div style="background:${balance >= 0 ? '#EEF3FF' : '#FFF0F0'};border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:11px;color:${balance >= 0 ? '#4A7CFE' : '#FF6B6B'};font-weight:700;margin-bottom:6px;">잔  액</div>
+      <div style="font-size:17px;font-weight:800;color:${balance >= 0 ? '#4A7CFE' : '#FF6B6B'};">${balance >= 0 ? '' : '-'}₩${Math.abs(balance).toLocaleString()}</div>
+    </div>`;
+
+  // 마감 이력 표시 (중복 허용이므로 누적 이력 보여줌)
+  const history    = getHistory();
+  const closedList = history.filter(h => h.yearMonth === ymKey);
+  const alreadyDiv = document.getElementById('closing-already-done');
+
+  if (closedList.length > 0) {
+    alreadyDiv.style.display = 'block';
+    document.getElementById('closing-already-text').textContent =
+      `이번 달 마감 ${closedList.length}회 기록됨 · 최근 마감: ${formatDateTime(closedList[closedList.length-1].closedAt)}`;
+  } else {
+    alreadyDiv.style.display = 'none';
+  }
+
+  // 확정 버튼은 항상 활성화 (중복 마감 허용)
+  const confirmBtn = document.getElementById('closing-confirm-btn');
+  confirmBtn.disabled      = false;
+  confirmBtn.style.opacity = '1';
+  confirmBtn.style.cursor  = 'pointer';
+
+  document.getElementById('closing-overlay').style.display = 'flex';
+}
+
+function closeClosingPopup() {
+  document.getElementById('closing-overlay').style.display = 'none';
+}
+
+// ── 마감 확정 ──
+function doMonthClose() {
+  if (!isCurrentMonth()) { showNotCurrentMonthError(); return; }
+
+  const base  = new Date(_baseYear, _baseMonth + currentMonthOffset, 1);
+  const curY  = base.getFullYear();
+  const curM  = base.getMonth() + 1;
+  const ymKey = `${curY}-${String(curM).padStart(2,'0')}`;
+
+  const ledger    = getLedger();
+  const thisMonth = ledger.filter(r => r.date && r.date.startsWith(ymKey));
+  const income    = thisMonth.filter(r => r.type === '수입').reduce((s,r) => s+(r.amount||0), 0);
+  const expense   = thisMonth.filter(r => r.type === '지출').reduce((s,r) => s+(r.amount||0), 0);
+  const balance   = income - expense;
+
+  // 마감 이력 누적 저장
+  const history = getHistory();
+  const seq = history.filter(h => h.yearMonth === ymKey).length + 1;
+  history.push({
+    yearMonth : ymKey,
+    year      : curY,
+    month     : curM,
+    seq       : seq,
+    closedAt  : new Date().toISOString(),
+    summary   : { income, expense, balance, txnCount: thisMonth.length }
+  });
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+
+  closeClosingPopup();
+  initBanner();
+
+  setTimeout(() => {
+    alert(`✅ ${curY}년 ${curM}월 마감 처리가 완료되었습니다! (${seq}회차)\n\n수입: ₩${income.toLocaleString()}\n지출: ₩${expense.toLocaleString()}\n잔액: ₩${balance.toLocaleString()}`);
+  }, 150);
+}
+
+// ── 유틸 ──
+function getLedger() {
+  try { return JSON.parse(localStorage.getItem(LEDGER_KEY) || '[]'); } catch(e) { return []; }
+}
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e) { return []; }
+}
+function formatDateTime(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// 팝업 외부 클릭 닫기
+document.getElementById('closing-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('closing-overlay')) closeClosingPopup();
+});
+
+// changeMonth 후 배너 갱신
+const _origChangeMonth = changeMonth;
+changeMonth = function(dir) {
+  _origChangeMonth(dir);
+  initBanner();
+};
+
+// 페이지 로드 시 배너 초기화
+initBanner();
+</script>
+
+</body>
+</html>
